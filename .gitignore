@@ -1,0 +1,13 @@
+# 构建产物（二进制，体积大、每次构建都变，不进 git）
+.build_traesing/
+TraeSign.app/
+
+# 原 C# 参考副本（内含嵌套 .git，勿提交）
+reference/
+
+# 本地工具状态 / 记忆
+.workbuddy/
+
+# macOS 系统文件
+.DS_Store
+Sources/.DS_Store
