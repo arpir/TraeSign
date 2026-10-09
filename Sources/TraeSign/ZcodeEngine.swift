@@ -13,16 +13,23 @@ enum ZcodeEngine {
     }
 
     // MARK: 凭证解密
-    /// 与 zcode CLI 一致的密钥种子：优先环境变量，否则机器信息回退
-    static func resolveSecret() -> String {
+    /// 与 zcode CLI 一致的密钥种子候选列表。
+    /// 注意：zcode 客户端按「运行平台」拼种子，Windows 用 win32、macOS 用 darwin。
+    /// 本应用是 macOS 版，默认 darwin；同时保留 win32 等以兼容从 Windows 迁来的凭证文件。
+    static func resolveSecretCandidates() -> [String] {
+        var list: [String] = []
         if let env = ProcessInfo.processInfo.environment["ZCODE_CREDENTIAL_SECRET"], !env.isEmpty {
-            return env.trimmingCharacters(in: .whitespaces)
+            list.append(env.trimmingCharacters(in: .whitespaces))
         }
         let user = NSUserName()
-        return "zcode-credential-fallback:win32:\(NSHomeDirectory()):\(user)"
+        let home = NSHomeDirectory()
+        for platform in ["darwin", "win32", "darwin-x64", "macos"] {
+            list.append("zcode-credential-fallback:\(platform):\(home):\(user)")
+        }
+        return list
     }
 
-    /// 解密 enc:v1:<iv>.<tag>.<ct>（base64url）
+    /// 解密 enc:v1:<iv>.<tag>.<ct>（base64url），依次尝试各候选种子，命中即返回明文
     static func decrypt(_ enc: String) -> String? {
         guard enc.hasPrefix(encPrefix) else { return nil }
         let parts = enc.dropFirst(encPrefix.count).split(separator: ".")
@@ -30,9 +37,14 @@ enum ZcodeEngine {
         guard let iv = Base64URL.decode(String(parts[0])), iv.count == 12,
               let tag = Base64URL.decode(String(parts[1])), tag.count == 16,
               let ct = Base64URL.decode(String(parts[2])), !ct.isEmpty else { return nil }
-        let key = SymmetricKey(data: sha256(Data(resolveSecret().utf8)))
-        guard let plain = aes256GCMDecrypt(iv: iv, tag: tag, ciphertext: ct, key: key) else { return nil }
-        return String(data: plain, encoding: .utf8)
+        for seed in resolveSecretCandidates() {
+            let key = SymmetricKey(data: sha256(Data(seed.utf8)))
+            if let plain = aes256GCMDecrypt(iv: iv, tag: tag, ciphertext: ct, key: key),
+               let s = String(data: plain, encoding: .utf8) {
+                return s
+            }
+        }
+        return nil
     }
 
     static func getJwt() -> String? {

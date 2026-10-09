@@ -55,8 +55,8 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
     <key>CFBundleExecutable</key>      <string>TraeSign</string>
     <key>CFBundleIdentifier</key>      <string>com.traesign.macos</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
-    <key>CFBundleShortVersionString</key> <string>1.0.0</string>
-    <key>CFBundleVersion</key>         <string>1</string>
+    <key>CFBundleShortVersionString</key> <string>1.0.1</string>
+    <key>CFBundleVersion</key>         <string>2</string>
     <key>LSMinimumSystemVersion</key>  <string>12.0</string>
     <key>NSPrincipalClass</key>        <string>NSApplication</string>
     <key>NSHighResolutionCapable</key> <true/>
